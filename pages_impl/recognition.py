@@ -1,4 +1,5 @@
 import gc
+import logging
 import hashlib
 import os
 import tempfile
@@ -14,6 +15,7 @@ from inference.video_processor import MAX_DURATION_S, FeatureExtractor, VideoErr
 from ui import charts, data
 from ui.theme import MODEL_COLORS, esc, html_row, metric, note, page_title
 
+log = logging.getLogger("asl_vision")
 ALLOWED = ["mp4", "mov", "avi", "webm", "mkv", "m4v"]
 DEMO_ORDER = COMPARISON_1000 + ["geometry_transformer_300", "geometry_transformer_500", "geometry_transformer_1200"]
 
@@ -138,9 +140,12 @@ def render():
         except ModelUnavailable as e:
             st.error(f"The model could not be loaded: {e}")
             return
-        except Exception as e:                      # never show a raw traceback to visitors
+        except Exception as e:                      # no raw traceback for visitors; full one goes to the server log
+            log.exception("prediction failed for %s with %s", up.name, model_id)
             st.error(f"Something went wrong while processing this video ({type(e).__name__}). "
                      "Please try another clip (MP4 with H.264 works best).")
+            with st.expander("Technical details"):
+                st.code(f"{type(e).__name__}: {e}"[:600])
             return
 
     last = st.session_state["_last"]
