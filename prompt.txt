@@ -1,0 +1,408 @@
+# Project: ASL Vision – Interactive Hand Sign Recognition Web Application
+
+## 1. Your Role
+
+Act as a Senior Machine Learning Engineer and Python Web Application Developer.
+
+I have completed a university capstone project with my team. We trained a video-based American Sign Language (ASL) hand sign recognition system using the R3D_18 3D Convolutional Neural Network architecture.
+
+We trained four different model configurations:
+
+- 300
+- 500
+- 1000
+- 1200
+
+Your task is to build a complete, attractive, interactive web application that showcases our research, allows visitors to test our trained models, and compares their performance.
+
+This application will be demonstrated during our university capstone presentation.
+
+## 2. STRICT BUDGET REQUIREMENTS
+
+I have absolutely no budget for this project.
+
+Do not use:
+- Paid hosting.
+- Paid GPU instances.
+- Paid APIs.
+- Paid databases.
+- Paid cloud storage.
+- Any service requiring a subscription.
+
+Use only free services and open-source technologies.
+
+### Technology stack
+
+- Python
+- Streamlit
+- PyTorch
+- Torchvision, if compatible with the existing model implementation
+- OpenCV
+- NumPy
+- Pandas
+- Plotly
+
+### Deployment
+
+Primary hosting: Streamlit Community Cloud.
+
+The application must work on CPU without requiring CUDA or a GPU.
+
+Deployment must not depend on paid resources.
+
+## 3. PHASE 1: INSPECT THE EXISTING PROJECT
+
+Before writing application code, inspect the entire existing repository.
+
+Identify:
+
+1. All four trained model checkpoints.
+2. The exact R3D_18 architecture used.
+3. Class counts and class names.
+4. Class-to-index mappings.
+5. Video preprocessing pipeline.
+6. Frame sampling strategy.
+7. Number of frames per video.
+8. Image dimensions.
+9. Normalization parameters.
+10. Tensor dimensions and ordering.
+11. Evaluation metrics.
+12. Training history and confusion matrices, if available.
+
+Determine what 300, 500, 1000, and 1200 actually represent. Do not assume they are class counts without checking.
+
+The inference pipeline must reproduce the original training preprocessing exactly.
+
+Never fabricate model metrics or predictions.
+
+If any required information is missing, report it before making assumptions.
+
+## 4. APPLICATION STRUCTURE
+
+Build a polished, modern, research-oriented web application.
+
+Application name:
+
+ASL Vision
+
+Subtitle:
+
+Video-Based American Sign Language Recognition Using 3D Convolutional Neural Networks.
+
+Design requirements:
+
+- Professional academic research presentation.
+- Clean and modern interface.
+- Navy, white, and subtle blue color palette.
+- Good typography.
+- Attractive metric cards.
+- Interactive charts.
+- Responsive layout.
+- Clear navigation.
+- Consistent spacing and styling.
+
+Avoid making the application look like a basic Streamlit template.
+
+Create five main sections.
+
+### PAGE 1: PROJECT OVERVIEW
+
+Create a visually attractive introduction.
+
+Include:
+
+- Project title.
+- Project description.
+- Research objectives.
+- R3D_18 architecture.
+- Four experimental model configurations.
+- Dataset description.
+- Main research contributions.
+
+Show project statistics only when verified from the repository.
+
+Include a prominent navigation button to the recognition demo.
+
+### PAGE 2: INTERACTIVE ASL RECOGNITION
+
+This is the most important feature.
+
+Visitors should be able to upload a video containing an ASL hand sign and test our actual trained models.
+
+Required features:
+
+1. Video upload supporting appropriate formats such as MP4, AVI, and MOV.
+2. Four-model selection dropdown.
+3. Video preview.
+4. Predict Sign button.
+5. Video preprocessing using the original training pipeline.
+6. Prediction using the selected trained checkpoint.
+7. Predicted class displayed prominently.
+8. Prediction confidence displayed as a percentage.
+9. Top 3 or top 5 predictions with confidence scores.
+10. Interactive confidence visualization using Plotly.
+
+Display video information when available:
+
+- Video duration.
+- Frame rate.
+- Total frames.
+- Number of frames selected for inference.
+
+Provide loading indicators while processing.
+
+Handle invalid videos and unsupported formats gracefully.
+
+IMPORTANT:
+This is a video-based sign classification system. Do not describe it as continuous real-time sign language translation.
+
+Do not generate fake predictions for demonstration purposes.
+
+### PAGE 3: MODEL COMPARISON
+
+Create a dedicated comparison dashboard.
+
+Display all four configurations.
+
+Create a comparison table:
+
+| Model | Accuracy | Precision | Recall | F1-score |
+
+Use actual evaluation results from the repository.
+
+Create interactive charts:
+
+1. Accuracy comparison.
+2. Precision, recall, and F1-score comparison.
+3. Confusion matrix visualization, if available.
+4. Inference time comparison, if measured.
+
+Highlight the best-performing model based on actual results.
+
+If metrics are unavailable, show an appropriate message instead of fabricated values.
+
+### PAGE 4: METHODOLOGY
+
+Explain the technical pipeline visually.
+
+Video Input
+→ Frame Extraction
+→ Video Preprocessing
+→ R3D_18 Feature Extraction
+→ Classification Layer
+→ Predicted Sign
+
+Explain:
+
+- Why video-based recognition is used.
+- What 3D CNN means.
+- What R3D_18 is.
+- How spatial and temporal features are extracted.
+- How the classification layer generates predictions.
+
+Use a clear architecture diagram.
+
+Keep the explanation technically correct and understandable to university examiners.
+
+### PAGE 5: ABOUT THE PROJECT
+
+Include:
+
+- Research background.
+- Research objectives.
+- Dataset information.
+- Model architecture.
+- Experimental configurations.
+- Evaluation methodology.
+- Team members.
+- GitHub repository link.
+
+Make team information configurable.
+
+## 5. MODEL INFERENCE IMPLEMENTATION
+
+Build a separate inference module.
+
+Suggested structure:
+
+app.py
+
+inference/
+    model_loader.py
+    video_processor.py
+    predictor.py
+    config.py
+
+assets/
+    logo.png
+    architecture.png
+
+results/
+    metrics.json
+
+models/
+    README.md
+
+requirements.txt
+README.md
+
+Adapt this structure to the existing repository.
+
+Requirements:
+
+- Load the correct checkpoint.
+- Use the exact trained architecture.
+- Load the correct class mapping.
+- Use model.eval().
+- Use torch.inference_mode().
+- Support CPU inference.
+- Do not require CUDA.
+- Validate checkpoint compatibility.
+- Validate output dimensions.
+- Handle state dictionaries correctly.
+
+### MEMORY OPTIMIZATION
+
+Streamlit Community Cloud has limited resources.
+
+Therefore:
+
+- Never load all four models simultaneously.
+- Load only the currently selected model.
+- Cache model loading appropriately using st.cache_resource.
+- Avoid unnecessary model copies.
+- Release previous model resources when changing configurations.
+- Avoid loading training datasets into memory.
+- Avoid unnecessary dependencies.
+- Keep the inference pipeline memory-efficient.
+
+Do not retrain or modify existing model weights.
+
+Do not replace our trained checkpoints with pretrained ImageNet weights.
+
+## 6. VIDEO PROCESSING
+
+Create reusable video-processing functions.
+
+The processing pipeline must:
+
+1. Read the uploaded video.
+2. Validate the video.
+3. Extract frames using the original training strategy.
+4. Preserve temporal ordering.
+5. Apply the exact training transformations.
+6. Convert frames into the expected tensor format.
+7. Pass the tensor to the selected model.
+
+Do not arbitrarily change frame count, image dimensions, normalization, or tensor ordering.
+
+Implement reasonable upload-size and duration restrictions.
+
+Handle corrupted and incompatible videos with understandable messages.
+
+## 7. ZERO-BUDGET MODEL STORAGE
+
+Inspect the checkpoint file sizes before choosing a storage strategy.
+
+If the checkpoints are reasonably small and suitable for the repository, organize them appropriately.
+
+If they are too large for normal GitHub file uploads:
+
+- Keep the application source code in GitHub.
+- Store the model checkpoints in a separate public Hugging Face Model Repository, if its free storage and download limits are suitable.
+- Download only the selected checkpoint when required.
+- Use huggingface_hub or an appropriate direct download method.
+- Do not require a paid subscription or private model access.
+- Do not upload unnecessary training datasets or intermediate checkpoints.
+
+Never commit large files blindly.
+
+## 8. STREAMLIT COMMUNITY CLOUD DEPLOYMENT
+
+The final application must be deployable on the free Streamlit Community Cloud tier.
+
+Prepare:
+
+- requirements.txt
+- README.md
+- app.py
+- All necessary inference modules.
+- Model download configuration, if needed.
+
+Use CPU-compatible dependency versions.
+
+Do not install CUDA-specific packages.
+
+Do not depend on local file paths from the development machine.
+
+Ensure that the app can locate and download the selected checkpoint in the cloud environment.
+
+Do not expose credentials or access tokens in source code.
+
+Explain the complete GitHub-to-Streamlit deployment process.
+
+## 9. TESTING
+
+Before deployment, test:
+
+1. All four checkpoints independently.
+2. Correct class mappings.
+3. Video preprocessing.
+4. Tensor dimensions.
+5. Prediction output.
+6. Confidence calculation.
+7. Model switching.
+8. Invalid video handling.
+9. CPU inference.
+10. Memory consumption.
+11. Local Streamlit execution.
+
+Measure actual inference time for each configuration.
+
+If the application exceeds reasonable CPU or memory limits, investigate optimization without changing model behavior.
+
+Report all testing results honestly.
+
+## 10. FINAL DELIVERABLES
+
+Provide:
+
+1. Complete application source code.
+2. Organized project structure.
+3. requirements.txt.
+4. README.md.
+5. Model storage instructions.
+6. Local execution instructions.
+7. Streamlit Community Cloud deployment instructions.
+8. Testing report.
+9. Known limitations.
+
+The final application must be a functional research showcase, not a static frontend mockup.
+
+## 11. DEVELOPMENT ORDER
+
+Follow this order strictly:
+
+Phase 1: Inspect the existing project.
+
+Phase 2: Understand all four models and their preprocessing.
+
+Phase 3: Implement and test CPU inference independently.
+
+Phase 4: Build the Streamlit interface.
+
+Phase 5: Integrate all four models.
+
+Phase 6: Add actual evaluation results and visualizations.
+
+Phase 7: Optimize memory and inference performance.
+
+Phase 8: Test locally.
+
+Phase 9: Prepare free deployment.
+
+Do not overengineer.
+
+Do not add authentication, databases, user management, unnecessary APIs, or unrelated features.
+
+The priority is a beautiful, reliable, technically accurate, zero-budget application that demonstrates our actual capstone research.

@@ -1,0 +1,11 @@
+# CPU-only PyTorch wheels (no CUDA download) -- Streamlit Community Cloud / any CPU host
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0
+torchvision==0.29.2
+# MediaPipe version used to build the training feature cache (brings opencv-contrib-python)
+mediapipe==0.10.35
+streamlit==1.67.0
+plotly==7.1.0
+numpy
+pandas
+huggingface_hub

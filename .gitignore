@@ -1,0 +1,31 @@
+# environments / caches
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.streamlit/secrets.toml
+.env
+
+# model weights: hosted on Hugging Face, never in git
+models/*.pt
+models/*.pth
+**/model_weights.pt
+**/best_model.pt
+**/last*.pt
+
+# ASL Citizen-derived material (licence forbids redistribution; contains identifiable signers)
+kaggle_outputs/
+notebooks/
+*.zip
+/asl-*.ipynb
+/extras-*.ipynb
+landmark_model_1000_class/
+previous_model_r3d_18/
+swin_3d_1000_class/
+v10_checkpoints/
+samples/
+
+# local notes
+about_team.txt
+dataset_license.txt.txt
+text.txt

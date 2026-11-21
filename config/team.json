@@ -1,0 +1,29 @@
+{
+  "university": "East West University",
+  "department": "Department of Computer Science and Engineering",
+  "location": "Dhaka, Bangladesh",
+  "github_url": "https://github.com/nadim-srabon/asl-vision",
+  "show_emails": false,
+  "members": [
+    {
+      "name": "Nadim Srabon",
+      "role": "Team member"
+    },
+    {
+      "name": "Pranay Saha",
+      "role": "Team member"
+    },
+    {
+      "name": "Redoanul Alam Mozumder",
+      "role": "Team member"
+    },
+    {
+      "name": "Aniruddha Manab Deb",
+      "role": "Team member"
+    }
+  ],
+  "supervisor": {
+    "name": "Dr. Anup Kumar Paul",
+    "role": "Supervisor"
+  }
+}
