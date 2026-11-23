@@ -1,6 +1,6 @@
 import gc
-import logging
 import hashlib
+import logging
 import os
 import tempfile
 import time
@@ -13,7 +13,7 @@ from inference.model_loader import ModelUnavailable, load_model
 from inference.predictor import predict
 from inference.video_processor import MAX_DURATION_S, FeatureExtractor, VideoError
 from ui import charts, data
-from ui.theme import MODEL_COLORS, esc, html_row, metric, note, page_title
+from ui.theme import esc, panel_title
 
 log = logging.getLogger("asl_vision")
 ALLOWED = ["mp4", "mov", "avi", "webm", "mkv", "m4v"]
@@ -54,15 +54,15 @@ def _extract(file_bytes, suffix):
     return feats
 
 
-def _result_card(pred, spec):
+def _result_html(pred, spec):
     pct = pred.confidence * 100
-    st.markdown(f"""
+    return f"""
 <div class="result">
-  <div class="label">Predicted sign &middot; {esc(spec.display_name)} ({spec.num_classes} classes)</div>
+  <div class="label">Predicted sign &middot; {esc(spec.display_name)}</div>
   <div class="sign">{esc(pred.label)}</div>
-  <div class="conf">Confidence {pct:.1f}% &nbsp;&middot;&nbsp; model inference {pred.inference_s * 1000:.0f} ms on CPU</div>
+  <div class="conf">Confidence {pct:.1f}% &nbsp;&middot;&nbsp; {spec.num_classes} classes</div>
   <div class="bar"><div style="width:{min(pct, 100):.1f}%"></div></div>
-</div>""", unsafe_allow_html=True)
+</div>"""
 
 
 def _quality_warnings(feats):
@@ -79,117 +79,170 @@ def _quality_warnings(feats):
         st.warning(m)
 
 
-def render():
-    page_title("Interactive demo", "ASL sign recognition",
-               "Upload a short video of one isolated ASL sign, choose a trained model, and see what it predicts. "
-               "All inference runs on CPU with the team's own checkpoints.")
+def _figcaption(text, pill=""):
+    p = f'<span class="pill">{esc(pill)}</span>' if pill else ""
+    st.markdown(f'<div class="figcaption"><span>{esc(text)}</span>{p}</div>', unsafe_allow_html=True)
 
-    left, right = st.columns([1.05, 1], gap="large")
-    with left:
-        up = st.file_uploader("Video of a single sign", type=ALLOWED,
-                              help=f"MP4 / MOV / AVI / WEBM / MKV, up to 50 MB and {int(MAX_DURATION_S)} s. "
-                                   "Best results: one signer, upper body visible, plain background.")
+
+def _hint(title, sub):
+    st.markdown(f'<div class="stage"><div class="drop-hint"><b>{esc(title)}</b>{esc(sub)}</div></div>',
+                unsafe_allow_html=True)
+
+
+def _hint_text(text):
+    st.markdown(f'<div class="hint">{text}</div>', unsafe_allow_html=True)
+
+
+def _short(mid):
+    s = MODELS[mid]
+    return f"{s.display_name} · {s.num_classes}"
+
+
+def _run(up, model_id, compare_all):
+    spec = MODELS[model_id]
+    file_bytes = up.getvalue()
+    suffix = up.name.rsplit(".", 1)[-1].lower()
+    box = st.empty()
+    try:
+        with box.status("Processing video...", expanded=False) as status:
+            status.update(label="Sampling 16 frames and extracting MediaPipe landmarks...")
+            feats = _extract(file_bytes, suffix)
+            status.update(label=f"Loading {spec.display_name}...")
+            model = get_model(model_id)
+            status.update(label="Running the model...")
+            pred = predict(model, model_id, feats)
+            others = []
+            if compare_all:
+                for mid in COMPARISON_1000:
+                    status.update(label=f"Running {MODELS[mid].display_name}...")
+                    others.append(pred if mid == model_id else predict(get_model(mid), mid, feats))
+                get_model(model_id)           # leave the selected model resident
+            status.update(label="Done", state="complete")
+    except VideoError as e:
+        st.error(str(e))
+        return
+    except ModelUnavailable as e:
+        st.error(f"The model could not be loaded: {e}")
+        return
+    except Exception as e:                      # no raw traceback for visitors; full one goes to the server log
+        log.exception("prediction failed for %s with %s", up.name, model_id)
+        st.error(f"Something went wrong while processing this video ({type(e).__name__}). "
+                 "Please try another clip (MP4 with H.264 works best).")
+        with st.expander("Technical details"):
+            st.code(f"{type(e).__name__}: {e}"[:600])
+        return
+    box.empty()                                 # success: the result card replaces the progress box
+    st.session_state["_last"] = dict(feats=feats, pred=pred, model_id=model_id, others=others, name=up.name)
+    hist = st.session_state.setdefault("_history", [])
+    hist.insert(0, dict(sign=pred.label, conf=pred.confidence, model=_short(model_id)))
+    del hist[8:]
+    st.session_state["_status"] = f"Last run: {pred.label}"
+    st.session_state["_status_detail"] = f"{_short(model_id)} · {pred.inference_s * 1000:.0f} ms model"
+
+
+def _controls():
+    with st.container(key="panel_video"):
+        panel_title("Video")
+        up = st.file_uploader("Clip of a single sign", type=ALLOWED, label_visibility="collapsed",
+                              help=f"MP4 / MOV / AVI / WEBM / MKV, up to 50 MB and {int(MAX_DURATION_S)} s.")
+        _hint_text("One sign, 1-5 s, upper body and both hands visible.")
+    with st.container(key="panel_model"):
+        panel_title("Model")
         model_id = st.selectbox("Model", DEMO_ORDER, format_func=lambda m: label(MODELS[m]),
-                                help="The four 1000-class models share the same vocabulary and test split.")
+                                label_visibility="collapsed")
         spec = MODELS[model_id]
         m = data.metrics(model_id)
         if m:
-            st.caption(f"{spec.description}  \nTest accuracy: **{m['test']['top1']:.1%} top-1 / "
-                       f"{m['test']['top5']:.1%} top-5** on {spec.num_classes} signs.")
-        compare_all = st.checkbox("Also run all four 1000-class models on this clip",
-                                  help="Models are loaded one after another (never all at once).")
-        go = st.button("Predict sign", type="primary", width="stretch", disabled=up is None)
-    with right:
-        if up is not None:
-            if up.name.lower().endswith((".mp4", ".webm", ".m4v", ".mov")):
+            _hint_text(f'{esc(spec.family)} &middot; test accuracy <b style="color:#d8b4fe">{m["test"]["top1"]:.1%}</b>'
+                       f' top-1 / {m["test"]["top5"]:.1%} top-5 on {spec.num_classes} signs')
+    with st.container(key="panel_options"):
+        panel_title("Options")
+        compare_all = st.toggle("Compare all four 1000-class models",
+                                help="Models are loaded one after another (never all at once).")
+        _hint_text("CPU only &middot; one model in memory at a time")
+    go = st.button("Recognize sign", type="primary", width="stretch", disabled=up is None)
+    with st.container(key="panel_about_model"):
+        panel_title("About this model")
+        _hint_text(esc(spec.description))
+    return up, model_id, compare_all, go
+
+
+def _documents(up, last):
+    d1, d2 = st.columns(2, gap="small")
+    with d1:
+        with st.container(key="doc_source"):
+            _figcaption("Source", up.name[:30] if up is not None else "")
+            if up is None:
+                _hint("No video yet", "Upload a clip in the Video panel")
+            elif up.name.lower().endswith((".mp4", ".webm", ".m4v", ".mov")):
                 st.video(up)
             else:
-                st.info("Preview is not available for this container in most browsers; the video will still be "
-                        "processed.")
-        else:
-            note("<b>Tips for a good recording</b><br>&bull; One sign per clip, roughly 1-5 seconds<br>"
-                 "&bull; Signer centred, upper body and both hands visible<br>&bull; Even lighting, plain "
-                 "background<br>&bull; The models know the most frequent ASL Citizen glosses, e.g. "
-                 "<i>HELLO, THANKYOU, LOVE, BATHROOM, EXERCISE</i>")
+                _hint("Preview unavailable", "This container can't play in the browser, but it will be processed")
+            if last:
+                i = last["feats"].info
+                meta = f"{i.duration_s:.2f} s · {i.fps:.0f} fps · {i.width}x{i.height} · {i.total_frames} frames"
+            else:
+                meta = "—"
+            st.markdown(f'<div class="doc-bar"><span>{esc(meta)}</span><span>16 sampled</span></div>',
+                        unsafe_allow_html=True)
+    with d2:
+        with st.container(key="doc_result"):
+            _figcaption("Result", _short(last["model_id"]) if last else "")
+            if last:
+                st.markdown(f'<div class="stage">{_result_html(last["pred"], MODELS[last["model_id"]])}</div>',
+                            unsafe_allow_html=True)
+                meta = (f"model {last['pred'].inference_s * 1000:.0f} ms · "
+                        f"features {getattr(last['feats'], 'extract_s', 0):.1f} s")
+                right_meta = f"hands {last['feats'].frames_with_hands}/16"
+            else:
+                _hint("Nothing yet", "Run to see the predicted sign")
+                meta, right_meta = "—", ""
+            st.markdown(f'<div class="doc-bar"><span>{esc(meta)}</span><span>{esc(right_meta)}</span></div>',
+                        unsafe_allow_html=True)
 
-    if up is None or not go and "_last" not in st.session_state:
-        return
-    if go:
-        file_bytes = up.getvalue()
-        suffix = up.name.rsplit(".", 1)[-1].lower()
-        try:
-            with st.status("Processing video...", expanded=False) as status:
-                status.update(label="Sampling 16 frames and extracting MediaPipe landmarks...")
-                feats = _extract(file_bytes, suffix)
-                status.update(label=f"Loading {spec.display_name}...")
-                model = get_model(model_id)
-                status.update(label="Running the model...")
-                pred = predict(model, model_id, feats)
-                others = []
-                if compare_all:
-                    for mid in COMPARISON_1000:
-                        status.update(label=f"Running {MODELS[mid].display_name}...")
-                        others.append(pred if mid == model_id else predict(get_model(mid), mid, feats))
-                    get_model(model_id)           # leave the selected model resident
-                status.update(label="Done", state="complete")
-            st.session_state["_last"] = dict(feats=feats, pred=pred, model_id=model_id, others=others,
-                                             name=up.name)
-        except VideoError as e:
-            st.error(str(e))
+
+def render():
+    left, right = st.columns([2.35, 1], gap="medium")
+    with right:
+        up, model_id, compare_all, go = _controls()
+
+    with left:
+        if go and up is not None:
+            _run(up, model_id, compare_all)
+        last = st.session_state.get("_last")
+        if last and (up is None or last["name"] != up.name):
+            last = None
+        _documents(up, last)
+
+        hist = st.session_state.get("_history", [])
+        if hist:
+            chips = "".join(f'<div class="chip"><b>{esc(h["sign"])}</b><span>{h["conf"]:.0%} · {esc(h["model"])}'
+                            f'</span></div>' for h in hist)
+            st.markdown(f'<div class="history"><span class="h-label">History</span>{chips}</div>',
+                        unsafe_allow_html=True)
+        if not last:
             return
-        except ModelUnavailable as e:
-            st.error(f"The model could not be loaded: {e}")
-            return
-        except Exception as e:                      # no raw traceback for visitors; full one goes to the server log
-            log.exception("prediction failed for %s with %s", up.name, model_id)
-            st.error(f"Something went wrong while processing this video ({type(e).__name__}). "
-                     "Please try another clip (MP4 with H.264 works best).")
-            with st.expander("Technical details"):
-                st.code(f"{type(e).__name__}: {e}"[:600])
-            return
 
-    last = st.session_state["_last"]
-    if up is not None and last["name"] != up.name and not go:
-        return
-    feats, pred, spec = last["feats"], last["pred"], MODELS[last["model_id"]]
-    info = feats.info
-
-    st.write("")
-    html_row([
-        metric("Duration", f"{info.duration_s:.2f} s", f"{info.width}x{info.height}"),
-        metric("Frame rate", f"{info.fps:.1f} fps"),
-        metric("Total frames", f"{info.total_frames}"),
-        metric("Frames used", "16", f"hands found in {feats.frames_with_hands}/16"),
-    ])
-    st.write("")
-    _quality_warnings(feats)
-
-    c1, c2 = st.columns([1, 1.25], gap="large")
-    with c1:
-        _result_card(pred, spec)
-        st.caption(f"Feature extraction (frame sampling + MediaPipe) took {getattr(feats, 'extract_s', 0):.1f} s. "
-                   "Confidence is the model's softmax probability, not a guarantee of correctness.")
-    with c2:
-        st.markdown("**Top-5 predictions**")
-        st.plotly_chart(charts.top_k_bar(pred.top_labels, pred.top_probs,
-                                         MODEL_COLORS.get(last["model_id"], "#2a78d6")),
-                        width="stretch", config={"displayModeBar": False})
-
-    if last["others"]:
-        st.markdown("#### All 1000-class models on this clip")
-        rows = [{"Model": MODELS[p.model_id].display_name, "Input": MODELS[p.model_id].family,
-                 "Top-1 prediction": p.label, "Confidence": f"{p.confidence:.1%}",
-                 "Top-5": ", ".join(p.top_labels), "Inference (ms)": round(p.inference_s * 1000)}
-                for p in last["others"]]
-        st.dataframe(rows, hide_index=True, width="stretch")
-
-    with st.expander("What the model sees -- the 16 sampled signer crops (112x112)"):
-        idx = np.linspace(0, 15, 8).astype(int)
-        cols = st.columns(8)
-        for c, t in zip(cols, idx):
-            c.image(feats.appearance[t, 0], caption=f"frame {info.sampled_indices[t]}", width="stretch")
-        st.caption("RGB models (Swin, R3D) see these crops; landmark models see the 58 MediaPipe points "
-                   "(hands, arms, eyebrows) detected on the same 16 frames.")
-    note("This is <b>isolated sign classification</b>: the clip is assigned to one of the model's known signs. "
-         "Signs outside that vocabulary, multiple signs in one clip, or very different camera setups from ASL "
-         "Citizen's webcam recordings will reduce accuracy.")
+        feats, pred = last["feats"], last["pred"]
+        _quality_warnings(feats)
+        with st.container(key="panel_top5"):
+            panel_title("Top-5 predictions")
+            st.plotly_chart(charts.top_k_bar(pred.top_labels, pred.top_probs), width="stretch",
+                            config={"displayModeBar": False})
+        if last["others"]:
+            with st.container(key="panel_compare"):
+                panel_title("All 1000-class models on this clip")
+                rows = [{"Model": MODELS[p.model_id].display_name, "Input": MODELS[p.model_id].family,
+                         "Top-1": p.label, "Confidence": f"{p.confidence:.1%}",
+                         "Top-5": ", ".join(p.top_labels), "Model ms": round(p.inference_s * 1000)}
+                        for p in last["others"]]
+                st.dataframe(rows, hide_index=True, width="stretch")
+        with st.container(key="panel_frames"):
+            panel_title("What the model sees · signer crops")
+            idx = np.linspace(0, 15, 8).astype(int)
+            cols = st.columns(8, gap="small")
+            for c, t in zip(cols, idx):
+                c.image(feats.appearance[t, 0], caption=f"f{feats.info.sampled_indices[t]}", width="stretch")
+            _hint_text("RGB models (Swin, R3D) see these 112x112 crops; landmark models see the 58 MediaPipe points "
+                       "detected on the same 16 frames. This is isolated sign classification: the clip is mapped "
+                       "to one of the model's known signs.")

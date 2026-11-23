@@ -32,7 +32,7 @@ def render():
                "Test top-5", "Val top-1", "Parameters (M)", "CPU latency (ms)"]].copy()
 
     def _hl(row):
-        return ["background-color:#EAF1FB;font-weight:700" if row["Model"] == best["Model"] else "" for _ in row]
+        return ["background-color:rgba(147,52,233,0.18);font-weight:700" if row["Model"] == best["Model"] else "" for _ in row]
 
     st.dataframe(show.style.apply(_hl, axis=1).format({
         "Accuracy (test top-1)": "{:.1%}", "Precision (macro)": "{:.3f}", "Recall (macro)": "{:.3f}",

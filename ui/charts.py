@@ -3,34 +3,37 @@ recessive grid, hover tooltips on every mark, legend for >= 2 series."""
 import numpy as np
 import plotly.graph_objects as go
 
-from .theme import INK_2, INK_3, LINE, NAVY, SERIES_SEQ
+from .theme import ACCENT, BORDER, DIM, MUTED, PANEL, SERIES_SEQ, TEXT
 
-FONT = dict(family="Inter, system-ui, sans-serif", color=NAVY, size=13)
+GRID = "rgba(255,255,255,0.06)"
+INK_2, INK_3, LINE, NAVY = MUTED, DIM, BORDER, TEXT
+
+FONT = dict(family="Inter, system-ui, sans-serif", color=TEXT, size=12)
 
 
 def _layout(fig, title=None, height=380, y_title=None, x_title=None, y_range=None, legend=True):
     fig.update_layout(
         title=dict(text=title, font=dict(size=15, color=NAVY), x=0, xanchor="left") if title else None,
         height=height, margin=dict(l=10, r=10, t=48 if title else 16, b=10),
-        paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF", font=FONT, showlegend=legend,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=FONT, showlegend=legend,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font=dict(color=INK_2)),
-        hoverlabel=dict(bgcolor="#FFFFFF", bordercolor=LINE, font=dict(color=NAVY)),
+        hoverlabel=dict(bgcolor=PANEL, bordercolor="#9334e9", font=dict(color=TEXT, family="Inter")),
         bargap=0.28, bargroupgap=0.08,
     )
-    fig.update_yaxes(title=y_title, gridcolor="#EEF2F8", zerolinecolor=LINE, tickfont=dict(color=INK_3),
+    fig.update_yaxes(title=y_title, gridcolor=GRID, zerolinecolor=LINE, tickfont=dict(color=INK_3),
                      range=y_range)
     fig.update_xaxes(title=x_title, showgrid=False, linecolor=LINE, tickfont=dict(color=INK_2))
     return fig
 
 
-def top_k_bar(labels, probs, color="#2a78d6"):
+def top_k_bar(labels, probs, color=ACCENT):
     labels, probs = list(labels)[::-1], [p * 100 for p in probs][::-1]
     fig = go.Figure(go.Bar(
-        x=probs, y=labels, orientation="h", marker=dict(color=color, line=dict(color="#FFFFFF", width=2)),
+        x=probs, y=labels, orientation="h", marker=dict(color=color, line=dict(color="#171021", width=2)),
         text=[f"{p:.1f}%" for p in probs], textposition="outside", cliponaxis=False,
         textfont=dict(color=INK_2), hovertemplate="<b>%{y}</b><br>confidence %{x:.2f}%<extra></extra>"))
     _layout(fig, height=60 + 46 * len(labels), x_title="Softmax confidence (%)", legend=False)
-    fig.update_xaxes(range=[0, max(100, max(probs) * 1.15)], showgrid=True, gridcolor="#EEF2F8")
+    fig.update_xaxes(range=[0, max(100, max(probs) * 1.15)], showgrid=True, gridcolor=GRID)
     fig.update_yaxes(tickfont=dict(color=NAVY, size=14))
     return fig
 
@@ -39,7 +42,7 @@ def grouped_bars(categories, series, colors, title=None, y_title="Score", y_rang
     """series: {name: [values per category]} -- one trace per series, colour by series."""
     fig = go.Figure()
     for (name, vals), col in zip(series.items(), colors):
-        fig.add_bar(name=name, x=categories, y=vals, marker=dict(color=col, line=dict(color="#FFFFFF", width=2)),
+        fig.add_bar(name=name, x=categories, y=vals, marker=dict(color=col, line=dict(color="#171021", width=2)),
                     text=[(f"{v:.1%}" if pct else f"{v:.3f}") if v is not None else "n/a" for v in vals],
                     textposition="outside", textfont=dict(size=11, color=INK_2), cliponaxis=False,
                     hovertemplate=f"<b>{name}</b><br>%{{x}}: %{{y:{'.1%' if pct else '.3f'}}}<extra></extra>")
@@ -57,11 +60,11 @@ def latency_vs_accuracy(df, colors):
                         name=r["Model"], text=[r["Model"]], textposition="top center",
                         textfont=dict(color=INK_2, size=12),
                         marker=dict(size=10 + 2.2 * np.sqrt(r["Parameters (M)"]), color=colors[r["model_id"]],
-                                    line=dict(color="#FFFFFF", width=2)),
+                                    line=dict(color="#171021", width=2)),
                         hovertemplate=(f"<b>{r['Model']}</b><br>test top-1 %{{y:.1%}}<br>CPU latency %{{x:.0f}} ms"
                                        f"<br>{r['Parameters (M)']} M parameters<extra></extra>"))
     _layout(fig, None, height=400, y_title="Test top-1 accuracy", x_title="CPU latency per clip, ms (log scale)")
-    fig.update_xaxes(type="log", showgrid=True, gridcolor="#EEF2F8")
+    fig.update_xaxes(type="log", showgrid=True, gridcolor=GRID)
     fig.update_yaxes(tickformat=".0%", range=[0, 0.8])
     return fig
 
@@ -84,7 +87,7 @@ def scaling_lines(classes, series):
     fig = go.Figure()
     for (name, vals), col in zip(series.items(), SERIES_SEQ):
         fig.add_scatter(x=classes, y=vals, name=name, mode="lines+markers", line=dict(color=col, width=2),
-                        marker=dict(size=9, line=dict(color="#FFFFFF", width=2)),
+                        marker=dict(size=9, line=dict(color="#171021", width=2)),
                         hovertemplate=f"<b>{name}</b><br>%{{x}} classes: %{{y:.1%}}<extra></extra>")
     _layout(fig, None, height=360, x_title="Number of classes", y_title="Test score", y_range=[0.4, 0.9])
     fig.update_xaxes(tickvals=classes, showgrid=False)
@@ -96,7 +99,7 @@ def scaling_lines(classes, series):
 def confused_pairs_bar(pairs_df, color):
     labels = [f"{t} → {p}" for t, p in zip(pairs_df["true"], pairs_df["pred"])][::-1]
     fig = go.Figure(go.Bar(x=pairs_df["errors"][::-1], y=labels, orientation="h",
-                           marker=dict(color=color, line=dict(color="#FFFFFF", width=2)),
+                           marker=dict(color=color, line=dict(color="#171021", width=2)),
                            hovertemplate="<b>%{y}</b><br>%{x} test clips<extra></extra>"))
     _layout(fig, None, height=80 + 26 * len(labels), x_title="Misclassified test clips (true → predicted)",
             legend=False)
@@ -105,7 +108,7 @@ def confused_pairs_bar(pairs_df, color):
 
 def confusion_heatmap(sub_cm, names):
     fig = go.Figure(go.Heatmap(
-        z=sub_cm, x=names, y=names, colorscale=[[0, "#F7FAFE"], [0.25, "#C6DBF7"], [0.6, "#5D93E0"], [1, "#0B1F3A"]],
+        z=sub_cm, x=names, y=names, colorscale=[[0, "#1d1429"], [0.25, "#4c1d95"], [0.6, "#9334e9"], [1, "#e9d5ff"]],
         hovertemplate="true <b>%{y}</b><br>predicted <b>%{x}</b><br>%{z} clips<extra></extra>",
         colorbar=dict(title="clips", thickness=12)))
     _layout(fig, None, height=560, x_title="Predicted", y_title="True", legend=False)

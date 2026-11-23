@@ -21,7 +21,7 @@ def render():
 </div>""", unsafe_allow_html=True)
 
     c1, c2 = st.columns([1, 3])
-    if c1.button("Try the live demo  →", type="primary", width="stretch"):
+    if c1.button("Open the recognizer  →", type="primary", width="stretch"):
         st.switch_page(st.session_state["_pages"]["recognition"])
     c2.markdown('<div class="small-muted" style="padding-top:.55rem">Upload a short clip of a single sign and '
                 'test any of our trained models on CPU.</div>', unsafe_allow_html=True)
