@@ -4,7 +4,9 @@ primaryColor = "#9334e9"
 backgroundColor = "#120b1b"
 secondaryBackgroundColor = "#1d1429"
 textColor = "#fafafa"
-font = "sans serif"
+font = "Raleway:https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap"
+codeFont = "Raleway:https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap"
+headingFont = "Raleway:https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap"
 borderColor = "#3a2d4f"
 
 [server]

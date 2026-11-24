@@ -1,6 +1,6 @@
 # ASL Vision
 
-**Video-Based American Sign Language Recognition Using 3D Convolutional Neural Networks**
+**Building a Word-Level American Sign Language Recognition System: A Multi-Architecture Design and Evaluation Study**
 
 A Streamlit web app that presents the capstone research of a team from East West University (Dhaka) and lets visitors test the trained models on their own videos of **isolated ASL signs**. All inference runs on CPU and costs nothing to host.
 

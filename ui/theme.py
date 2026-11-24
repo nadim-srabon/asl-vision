@@ -1,5 +1,5 @@
 """Visual identity: dark 'studio' look -- deep aubergine surfaces, purple accent, hairline borders,
-small uppercase panel titles, Inter + IBM Plex Mono. Plus small HTML components."""
+small uppercase panel titles, Raleway throughout. Plus small HTML components."""
 import html
 
 import streamlit as st
@@ -30,17 +30,20 @@ SERIES_SEQ = ["#3987e5", "#d95926", "#199e70"]   # small fixed series (e.g. P / 
 
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 :root {
   --bg:#120b1b; --panel:#171021; --panel2:#1d1429; --raised:#251b34;
   --border:rgba(74,57,98,0.75); --hairline:rgba(255,255,255,0.08);
   --text:#fafafa; --muted:#a3a3a3; --dim:#71717a;
   --accent:#9334e9; --accent2:#8f35ff; --accent-soft:rgba(147,52,233,0.14);
   --lavender:#d8b4fe; --link:#bf8bff; --stage-base:#0e0a16; --stage-square:#171221; --radius:10px;
-  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --mono:'Raleway', ui-sans-serif, system-ui, sans-serif;
 }
-html, body, .stApp, [class*="css"], .stMarkdown, button, input, textarea, select {
-  font-family:'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing:antialiased;
+/* Raleway everywhere -- except Streamlit's icon font (material symbols), which must keep its own family */
+html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]):not(.material-symbols-rounded):not([class*="material-symbols"]),
+button, input, textarea, select {
+  font-family:'Raleway', ui-sans-serif, system-ui, sans-serif !important; -webkit-font-smoothing:antialiased;
+  font-variant-numeric:lining-nums tabular-nums;
 }
 .stApp {
   background: radial-gradient(ellipse 60% 35% at 50% -5%, rgba(147,52,233,0.18), transparent 55%) no-repeat, var(--bg);
@@ -55,6 +58,11 @@ html, body, .stApp, [class*="css"], .stMarkdown, button, input, textarea, select
 [data-testid="stHeader"] { background:var(--panel); border-bottom:1px solid var(--hairline); height:3.25rem; }
 [data-testid="stHeader"] img { max-height:30px; }
 .block-container { padding-top:4.6rem !important; padding-bottom:4.5rem !important; max-width:1320px; }
+
+/* centred navigation, no logo */
+[data-testid="stHeader"] [data-testid="stToolbar"] { position:absolute; left:0; right:0; justify-content:center; }
+[data-testid="stTopNav"] { justify-content:center !important; margin:0 auto; }
+[data-testid="stLogoLink"], [data-testid="stHeaderLogo"] { display:none !important; }
 
 /* segmented-control navigation (top nav links): plain tabs, the active one raised */
 [data-testid="stTopNavLinkContainer"], [data-testid="stTopNavSection"] {
@@ -130,7 +138,7 @@ div.stButton > button[kind="primary"]:hover { filter:brightness(1.12); }
 div.stButton > button[kind="primary"]:active { transform:translateY(1px); }
 div.stButton > button[kind="primary"]:disabled { opacity:.5; }
 div.stButton > button[kind="secondary"] {
-  background:transparent !important; border:1px solid var(--border) !important; border-radius:8px !important;
+  padding:.6rem 1rem; font-weight:600; font-size:.9rem; background:transparent !important; border:1px solid var(--border) !important; border-radius:8px !important;
   color:var(--text) !important;
 }
 div.stButton > button[kind="secondary"]:hover { border-color:var(--accent) !important; background:var(--accent-soft) !important; }
@@ -194,6 +202,34 @@ div.stButton > button[kind="secondary"]:hover { border-color:var(--accent) !impo
 .history .chip { flex:0 0 auto; background:var(--raised); border:1px solid var(--border); border-radius:6px; padding:5px 9px; }
 .history .chip b { display:block; font-size:.78rem; color:var(--text); }
 .history .chip span { font-family:var(--mono); font-size:.6rem; color:var(--lavender); }
+
+/* ---- centred homepage */
+.home-hero { text-align:center; max-width:920px; margin:1.4rem auto 1.4rem; }
+.home-hero .eyebrow { display:inline-block; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.16em;
+  color:var(--lavender); border:1px solid var(--border); background:var(--accent-soft); border-radius:999px; padding:4px 14px; }
+.home-hero .thesis { color:var(--text); font-size:2.55rem; font-weight:800; line-height:1.18; letter-spacing:-0.01em; margin:1.1rem 0 1rem; }
+.home-hero .thesis span { display:block; font-size:1.35rem; font-weight:500; color:var(--lavender); margin-top:.55rem;
+  letter-spacing:0; }
+.home-hero .lead { color:#c9c6d1; font-weight:500; font-size:1.05rem; line-height:1.75; max-width:760px; margin:0 auto 1.3rem; }
+.home-hero .byline { color:var(--text); font-size:.92rem; font-weight:600; letter-spacing:.01em; }
+.home-hero .byline.sub { color:var(--muted); font-weight:500; font-size:.84rem; margin-top:.3rem; }
+.stats { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; max-width:1060px; margin:2.2rem auto 0; }
+.stat { text-align:center; background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:1.1rem .8rem; }
+.stat .v { font-size:2rem; font-weight:800; color:var(--text); letter-spacing:-0.01em; }
+.stat .l { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:var(--lavender); margin-top:.3rem; }
+.stat .n { font-size:.8rem; color:var(--muted); margin-top:.25rem; }
+.sec-head { text-align:center; max-width:780px; margin:3.4rem auto 1.3rem; }
+.sec-head .eyebrow { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.16em; color:var(--lavender); }
+.sec-head h2 { font-size:1.7rem !important; font-weight:700 !important; margin:.35rem 0 .2rem; padding:0 !important; }
+.sec-head .sec-lead { color:#c9c6d1; font-weight:500; font-size:1rem; line-height:1.75; margin:.6rem auto 0; }
+.hgrid { display:grid; gap:12px; max-width:1180px; margin:0 auto; }
+.hgrid.c4 { grid-template-columns:repeat(4, 1fr); } .hgrid.c3 { grid-template-columns:repeat(3, 1fr); }
+.hcard { text-align:center; background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.1rem; }
+.hcard .kicker { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:var(--lavender); }
+.hcard h4 { font-size:1.02rem; font-weight:700; margin:.45rem 0 .45rem; color:var(--text); }
+.hcard p { color:var(--muted); font-size:.86rem; font-weight:500; line-height:1.65; margin:0; }
+.hcard .acc { color:var(--text); font-size:1.05rem; font-weight:800; }
+@media (max-width: 900px) { .stats, .hgrid.c4, .hgrid.c3 { grid-template-columns:1fr 1fr; } .home-hero .thesis { font-size:1.8rem; } }
 
 /* ---- status bar */
 .statusbar { position:fixed; left:0; right:0; bottom:0; z-index:999; display:flex; align-items:center; gap:14px;

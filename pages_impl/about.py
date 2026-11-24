@@ -1,6 +1,7 @@
 import streamlit as st
 
 from inference.config import COMPARISON_1000, MODELS
+from pages_impl.overview import THESIS_TITLE
 from ui import data
 from ui.theme import esc, note, page_title
 
@@ -17,7 +18,8 @@ def render():
     t = data.team()
     ds = data.dataset()
     page_title("About", "About the project",
-               f"Capstone project, {t['department']}, {t['university']}, {t['location']}.")
+               f"Thesis: “{THESIS_TITLE}”. Capstone project, {t['department']}, {t['university']}, "
+               f"{t['location']}.")
 
     st.subheader("Research background")
     st.markdown(

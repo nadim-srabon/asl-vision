@@ -2,86 +2,112 @@ import streamlit as st
 
 from inference.config import COMPARISON_1000, MODELS
 from ui import data
-from ui.theme import card, esc, html_row, metric
+from ui.theme import esc
+
+THESIS_TITLE = ("Building a Word-Level American Sign Language Recognition System: "
+                "A Multi-Architecture Design and Evaluation Study")
+
+
+def _section(eyebrow, title, lead=""):
+    lead_html = f'<p class="sec-lead">{esc(lead)}</p>' if lead else ""
+    st.markdown(f'<div class="sec-head"><div class="eyebrow">{esc(eyebrow)}</div><h2>{esc(title)}</h2>{lead_html}</div>',
+                unsafe_allow_html=True)
+
+
+def _grid(items, cols=4):
+    """items: list of (kicker, title, body) -> centred cards in an even CSS grid."""
+    cells = "".join(f'<div class="hcard"><div class="kicker">{esc(k)}</div><h4>{esc(t)}</h4><p>{b}</p></div>'
+                    for k, t, b in items)
+    st.markdown(f'<div class="hgrid c{cols}">{cells}</div>', unsafe_allow_html=True)
 
 
 def render():
     ds = data.dataset()
-    best_id = max(COMPARISON_1000, key=lambda m: data.metrics(m)["test"]["top1"])
-    best = data.metrics(best_id)
+    team = data.team()
+    m = {mid: data.metrics(mid) for mid in MODELS}
+    best_id = max(COMPARISON_1000, key=lambda k: m[k]["test"]["top1"])
+    best = m[best_id]["test"]
+    names = " &middot; ".join(esc(p["name"]) for p in team["members"])
 
+    # ---------------- hero
     st.markdown(f"""
-<div class="hero">
-  <div class="eyebrow">Capstone Project &middot; East West University</div>
-  <h1>ASL Vision</h1>
-  <p class="sub">Video-Based American Sign Language Recognition Using 3D Convolutional Neural Networks
-  and video / skeleton Transformers &mdash; isolated-sign classification on the ASL Citizen dataset.</p>
-  <div class="chips"><span>Video Swin-T</span><span>R3D-18 3D-CNN</span><span>Geometry Transformer</span>
-  <span>ST-GCN</span><span>MediaPipe landmarks</span><span>{ds['subset_1000']['test']:,} held-out test clips</span></div>
+<div class="home-hero">
+  <div class="eyebrow">Capstone Thesis &middot; {esc(team['department'].replace('Department of ', ''))}</div>
+  <div class="thesis" role="heading" aria-level="1">{esc(THESIS_TITLE.split(': ')[0])}<span>{esc(THESIS_TITLE.split(': ')[1])}</span></div>
+  <p class="lead">An isolated, word-level ASL recogniser trained on the ASL Citizen dataset. We design and
+  compare four architectures &mdash; RGB video, skeleton landmarks and a fusion of both &mdash; under one
+  signer-independent evaluation protocol, and deploy them in this free CPU web demo.</p>
+  <div class="byline">{names}</div>
+  <div class="byline sub">Supervised by {esc(team['supervisor']['name'])} &middot; {esc(team['university'])},
+  {esc(team['location'])}</div>
 </div>""", unsafe_allow_html=True)
 
-    c1, c2 = st.columns([1, 3])
-    if c1.button("Open the recognizer  →", type="primary", width="stretch"):
+    _, b1, b2, _ = st.columns([1.35, 1, 1, 1.35], gap="small")
+    if b1.button("Try the recognizer  →", type="primary", width="stretch"):
         st.switch_page(st.session_state["_pages"]["recognition"])
-    c2.markdown('<div class="small-muted" style="padding-top:.55rem">Upload a short clip of a single sign and '
-                'test any of our trained models on CPU.</div>', unsafe_allow_html=True)
-    st.write("")
+    if b2.button("See the results", width="stretch"):
+        st.switch_page(st.session_state["_pages"]["comparison"])
 
-    html_row([
-        metric("Best test top-1 (1000 signs)", f"{best['test']['top1']:.1%}", f"{MODELS[best_id].display_name}"),
-        metric("Best test top-5 (1000 signs)", f"{best['test']['top5']:.1%}", "correct sign within 5 guesses"),
-        metric("Architectures compared", "4", "on the identical 1000-class split"),
-        metric("Videos in feature cache", f"{ds['cached_videos']:,}", f"{ds['glosses_in_cache']:,} ASL glosses"),
+    # ---------------- key numbers
+    stats = [
+        (f"{best['top1']:.1%}", "Best top-1 accuracy", f"{MODELS[best_id].display_name}, 1,000 signs"),
+        (f"{best['top5']:.1%}", "Best top-5 accuracy", "correct sign within 5 guesses"),
+        ("4", "Architectures", "compared on one identical split"),
+        (f"{ds['subset_1000']['test']:,}", "Test clips", "signers unseen in training"),
+    ]
+    cells = "".join(f'<div class="stat"><div class="v">{esc(v)}</div><div class="l">{esc(l)}</div>'
+                    f'<div class="n">{esc(n)}</div></div>' for v, l, n in stats)
+    st.markdown(f'<div class="stats">{cells}</div>', unsafe_allow_html=True)
+
+    # ---------------- about
+    _section("The project", "What we built",
+             "ASL Vision classifies a short video of one American Sign Language sign as one of up to 1,200 "
+             "words. Each clip is reduced to 16 evenly spaced frames, and the whole clip is classified at once. "
+             "This is word-level (isolated sign) recognition, not continuous sentence translation.")
+
+    # ---------------- objectives
+    _section("Research objectives", "What the study sets out to do")
+    _grid([
+        ("01", "Scale to 1,000+ words", "Build a word-level ASL classifier that works on a large vocabulary."),
+        ("02", "Compare architectures", "Evaluate RGB-video, landmark-only and fused models under one protocol."),
+        ("03", "Study vocabulary size", "Measure how accuracy changes from 300 to 1,200 signs."),
+        ("04", "Deploy for free", "Ship every trained model in a zero-cost, CPU-only web application."),
     ])
-    st.write("")
 
-    left, right = st.columns([1.25, 1], gap="large")
-    with left:
-        st.subheader("About the project")
-        st.markdown(
-            "ASL Vision recognises **isolated American Sign Language signs from short video clips**. Each clip "
-            "is reduced to 16 evenly spaced frames; the models then classify the whole clip as one of up to "
-            "1,200 sign glosses. This is *video classification of a single sign* &mdash; not continuous, "
-            "real-time sign-language translation.\n\n"
-            "Across two capstone stages we compared appearance-based models (a 3D-CNN and a video Transformer on "
-            "RGB signer crops) with skeleton-based models (a Transformer and a graph network on MediaPipe hand, "
-            "arm and face landmarks), all trained and tested on the same signer-independent splits.")
-        st.subheader("Research objectives")
-        st.markdown(
-            "1. Build an isolated ASL sign classifier that scales to **1,000+ signs**.\n"
-            "2. Compare **RGB-video**, **landmark-only** and **fused** architectures under one protocol.\n"
-            "3. Measure how accuracy changes as the vocabulary grows (300 → 1,200 signs).\n"
-            "4. Deploy the trained models in a **zero-cost, CPU-only** web demo.")
-    with right:
-        st.subheader("Main findings")
-        st.markdown(
-            f"- **Video Swin-T** is the most accurate model: **{best['test']['top1']:.1%} top-1 / "
-            f"{best['test']['top5']:.1%} top-5** on 1,000 signs.\n"
-            f"- The **landmark Transformer** reaches {data.metrics('geometry_transformer_1000')['test']['top1']:.1%} "
-            "with only 1.9 M parameters and runs in milliseconds on CPU.\n"
-            f"- The Capstone-B **R3D-18 dual-stream** model overfitted "
-            f"({data.metrics('r3d18_dualstream_1000')['test']['top1']:.1%} test top-1), which motivated the "
-            "Capstone-C redesign.\n"
-            "- Landmark accuracy degrades gracefully with vocabulary size: "
-            f"{data.metrics('geometry_transformer_300')['test']['top1']:.1%} at 300 signs → "
-            f"{data.metrics('geometry_transformer_1200')['test']['top1']:.1%} at 1,200.")
+    # ---------------- architectures
+    _section("Architectures", "Four models, one evaluation protocol",
+             "All four 1,000-sign models share the same class list, training split and test clips.")
+    _grid([(MODELS[k].family, MODELS[k].display_name,
+            f'<b class="acc">{m[k]["test"]["top1"]:.1%}</b> test top-1<br>{esc(MODELS[k].description)}')
+           for k in COMPARISON_1000])
 
-    st.write("")
-    st.subheader("Experimental configurations")
-    html_row([card(MODELS[m].display_name, MODELS[m].description, tag=MODELS[m].family.upper(), accent=True)
-              for m in COMPARISON_1000])
-    st.write("")
-    html_row([
-        card("Vocabulary scaling (300 / 500 / 1000 / 1200)",
-             "The Geometry Transformer was trained at four vocabulary sizes -- the 300, 500, 1,000 and 1,200 "
-             "most frequent glosses -- to study how accuracy scales with the number of classes.", tag="SCALING"),
-        card("Dataset: ASL Citizen",
-             f"Microsoft Research's crowd-sourced isolated-sign dataset. Our 1,000-sign subset has "
-             f"{ds['subset_1000']['videos']:,} videos ({ds['subset_1000']['train']:,} train / "
-             f"{ds['subset_1000']['val']:,} validation / {ds['subset_1000']['test']:,} test), with "
-             f"signers never shared between splits.", tag="DATA"),
-        card("Contributions",
-             "A unified preprocessing cache (MediaPipe + signer crops), a four-architecture comparison on one "
-             "split, a vocabulary-scaling study, and a reproducible CPU inference pipeline verified against "
-             "the training cache.", tag="CONTRIBUTIONS"),
+    # ---------------- findings
+    gt = m["geometry_transformer_1000"]["test"]["top1"]
+    _section("Findings", "What we learned")
+    _grid([
+        ("Accuracy", "Video Swin-T leads",
+         f"The video Transformer is the most accurate model: {best['top1']:.1%} top-1 and {best['top5']:.1%} "
+         "top-5 on 1,000 signs."),
+        ("Efficiency", "Landmarks are light",
+         f"The landmark Transformer reaches {gt:.1%} with only 1.9 M parameters and runs in milliseconds on CPU."),
+        ("Capstone B", "Fusion overfitted",
+         f"The earlier R3D-18 dual-stream model reached {m['r3d18_dualstream_1000']['test']['top1']:.1%}, "
+         "which motivated the Capstone C redesign."),
+        ("Scaling", "Graceful degradation",
+         f"Landmark accuracy falls only from {m['geometry_transformer_300']['test']['top1']:.1%} (300 signs) "
+         f"to {m['geometry_transformer_1200']['test']['top1']:.1%} (1,200 signs)."),
     ])
+
+    # ---------------- data & contributions
+    _section("Study design", "Data and contributions")
+    sub = ds["subset_1000"]
+    _grid([
+        ("Dataset", "ASL Citizen",
+         f"Microsoft Research's crowd-sourced isolated-sign dataset. The 1,000-sign subset has {sub['videos']:,} "
+         f"videos: {sub['train']:,} train, {sub['val']:,} validation and {sub['test']:,} test."),
+        ("Protocol", "Signer-independent",
+         "No signer appears in more than one split. Models are selected on validation and tested once."),
+        ("Contributions", "End-to-end pipeline",
+         "A shared preprocessing cache, a four-architecture comparison, a vocabulary-scaling study and a CPU "
+         "inference pipeline verified against the training cache."),
+    ], cols=3)

@@ -8,7 +8,7 @@ from .theme import ACCENT, BORDER, DIM, MUTED, PANEL, SERIES_SEQ, TEXT
 GRID = "rgba(255,255,255,0.06)"
 INK_2, INK_3, LINE, NAVY = MUTED, DIM, BORDER, TEXT
 
-FONT = dict(family="Inter, system-ui, sans-serif", color=TEXT, size=12)
+FONT = dict(family="Raleway, system-ui, sans-serif", color=TEXT, size=12)
 
 
 def _layout(fig, title=None, height=380, y_title=None, x_title=None, y_range=None, legend=True):
@@ -17,7 +17,7 @@ def _layout(fig, title=None, height=380, y_title=None, x_title=None, y_range=Non
         height=height, margin=dict(l=10, r=10, t=48 if title else 16, b=10),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=FONT, showlegend=legend,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, font=dict(color=INK_2)),
-        hoverlabel=dict(bgcolor=PANEL, bordercolor="#9334e9", font=dict(color=TEXT, family="Inter")),
+        hoverlabel=dict(bgcolor=PANEL, bordercolor="#9334e9", font=dict(color=TEXT, family="Raleway")),
         bargap=0.28, bargroupgap=0.08,
     )
     fig.update_yaxes(title=y_title, gridcolor=GRID, zerolinecolor=LINE, tickfont=dict(color=INK_3),
